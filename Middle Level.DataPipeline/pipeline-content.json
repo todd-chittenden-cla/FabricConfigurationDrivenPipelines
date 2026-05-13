@@ -1,0 +1,134 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "ForEach",
+        "typeProperties": {
+          "items": {
+            "value": "@range(0, add(div(pipeline().parameters.SumOfObjectsToCopyForCurrentBatch, pipeline().parameters.MaxNumberOfObjectsReturnedFromLookupActivity),\n                    if(equals(mod(pipeline().parameters.SumOfObjectsToCopyForCurrentBatch, pipeline().parameters.MaxNumberOfObjectsReturnedFromLookupActivity), 0), 0, 1)))",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "type": "Lookup",
+              "typeProperties": {
+                "source": {
+                  "type": "FabricSqlDatabaseSource",
+                  "sqlReaderQuery": {
+                    "value": "WITH OrderedControlTable AS (\n    SELECT *, ROW_NUMBER() OVER (ORDER BY [TaskId], [Id] DESC) AS RowNumber\n    FROM @{pipeline().parameters.MainControlTableName}\n    WHERE \n        TopLevelPipelineName = '@{pipeline().parameters.TopLevelPipelineName}'\n    AND CopyEnabled = 1)\n                             SELECT * FROM OrderedControlTable WHERE RowNumber BETWEEN @{add(mul(int(item()),pipeline().parameters.MaxNumberOfObjectsReturnedFromLookupActivity),\n                             add(mul(pipeline().parameters.SumOfObjectsToCopyForCurrentBatch, pipeline().parameters.CurrentSequentialNumberOfBatch), 1))}\n                             AND @{min(add(mul(int(item()), pipeline().parameters.MaxNumberOfObjectsReturnedFromLookupActivity), add(mul(pipeline().parameters.SumOfObjectsToCopyForCurrentBatch, pipeline().parameters.CurrentSequentialNumberOfBatch),\n                             pipeline().parameters.MaxNumberOfObjectsReturnedFromLookupActivity)),\n                            mul(pipeline().parameters.SumOfObjectsToCopyForCurrentBatch, add(pipeline().parameters.CurrentSequentialNumberOfBatch,1)), pipeline().parameters.SumOfObjectsToCopy)}",
+                    "type": "Expression"
+                  },
+                  "partitionOption": "None",
+                  "queryTimeout": "02:00:00"
+                },
+                "datasetSettings": {
+                  "type": "FabricSqlDatabaseTable",
+                  "schema": [],
+                  "connectionSettings": {
+                    "name": "PipelineControl",
+                    "properties": {
+                      "type": "FabricSqlDatabase",
+                      "typeProperties": {
+                        "artifactId": "67f48c8a-3935-b59f-4eb3-9018a60de7c2",
+                        "workspaceId": "00000000-0000-0000-0000-000000000000"
+                      },
+                      "externalReferences": {
+                        "connection": "21e098c8-37ce-468a-b1bd-787c9d6750dc"
+                      },
+                      "annotations": []
+                    }
+                  },
+                  "annotations": []
+                },
+                "firstRowOnly": false
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "GetObjectsPerGroupToCopy",
+              "description": "Get objects (tables etc.) from control table required to be copied in this group. The order of objects to be copied following the TaskId in control table (ORDER BY [TaskId] DESC).",
+              "dependsOn": []
+            },
+            {
+              "type": "InvokePipeline",
+              "typeProperties": {
+                "parameters": {
+                  "ObjectsPerGroupToCopy": {
+                    "value": "@activity('GetObjectsPerGroupToCopy').output.value",
+                    "type": "Expression"
+                  },
+                  "MainControlTableName": {
+                    "value": "@pipeline().parameters.MainControlTableName",
+                    "type": "Expression"
+                  },
+                  "Debug": {
+                    "value": "@pipeline().parameters.Debug",
+                    "type": "Expression"
+                  }
+                },
+                "waitOnCompletion": true,
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "pipelineId": "3feb63eb-532d-b7a6-4343-e71d30cc663e",
+                "operationType": "InvokeFabricPipeline"
+              },
+              "externalReferences": {
+                "connection": "3dce77d5-282e-4068-99ee-ae8373da6a12"
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "CopyObjectsInOneGroup",
+              "description": "Execute another pipeline to copy objects from one group. The objects belonging to this group will be copied parallelly.",
+              "dependsOn": [
+                {
+                  "activity": "GetObjectsPerGroupToCopy",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "name": "DivideOneBatchIntoMultipleGroups",
+        "description": "Divide objects from single batch into multiple sub parallel groups to avoid reaching the output limit of lookup activity.",
+        "dependsOn": []
+      }
+    ],
+    "parameters": {
+      "MaxNumberOfObjectsReturnedFromLookupActivity": {
+        "type": "int"
+      },
+      "TopLevelPipelineName": {
+        "type": "string"
+      },
+      "CurrentSequentialNumberOfBatch": {
+        "type": "int"
+      },
+      "SumOfObjectsToCopy": {
+        "type": "int"
+      },
+      "SumOfObjectsToCopyForCurrentBatch": {
+        "type": "int"
+      },
+      "MainControlTableName": {
+        "type": "string"
+      },
+      "ScheduleID": {
+        "type": "string"
+      },
+      "Debug": {
+        "type": "int",
+        "defaultValue": 0
+      }
+    }
+  }
+}
