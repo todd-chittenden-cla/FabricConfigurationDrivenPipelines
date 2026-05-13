@@ -1,0 +1,671 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "ForEach",
+        "typeProperties": {
+          "items": {
+            "value": "@pipeline().parameters.ObjectsPerGroupToCopy",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "type": "Switch",
+              "typeProperties": {
+                "on": {
+                  "value": "@json(item().DataLoadingBehaviorSettings).dataLoadingBehavior",
+                  "type": "Expression"
+                },
+                "cases": [
+                  {
+                    "value": "FullLoad",
+                    "activities": [
+                      {
+                        "type": "Copy",
+                        "typeProperties": {
+                          "source": {
+                            "type": "SqlServerSource",
+                            "partitionOption": "None",
+                            "queryTimeout": "02:00:00",
+                            "datasetSettings": {
+                              "type": "SqlServerTable",
+                              "typeProperties": {
+                                "schema": {
+                                  "value": "@json(item().SourceObjectSettings).schema",
+                                  "type": "Expression"
+                                },
+                                "table": {
+                                  "value": "@json(item().SourceObjectSettings).table",
+                                  "type": "Expression"
+                                },
+                                "database": {
+                                  "value": "@json(item().SourceConnectionSettings).databaseName",
+                                  "type": "Expression"
+                                }
+                              },
+                              "schema": [],
+                              "externalReferences": {
+                                "connection": "@json(item().SourceConnectionSettings).sourceConnectionID"
+                              },
+                              "annotations": []
+                            }
+                          },
+                          "sink": {
+                            "type": "LakehouseTableSink",
+                            "tableActionOption": {
+                              "value": "@json(item().CopyDestinationSettings).tableActionOption",
+                              "type": "Expression"
+                            },
+                            "applyVOrder": false,
+                            "upsertSettings": {},
+                            "partitionOption": "None",
+                            "datasetSettings": {
+                              "type": "LakehouseTable",
+                              "typeProperties": {
+                                "schema": {
+                                  "value": "@json(item().DestinationObjectSettings).schema",
+                                  "type": "Expression"
+                                },
+                                "table": {
+                                  "value": "@json(item().DestinationObjectSettings).table",
+                                  "type": "Expression"
+                                }
+                              },
+                              "schema": [],
+                              "connectionSettings": {
+                                "name": "d444462e_9088_448d_b5d4_c65523c9f281",
+                                "properties": {
+                                  "type": "Lakehouse",
+                                  "typeProperties": {
+                                    "artifactId": "@json(item().DestinationConnectionSettings).lakehouseID",
+                                    "workspaceId": "@json(item().DestinationConnectionSettings).workspaceID",
+                                    "rootFolder": "Tables"
+                                  },
+                                  "externalReferences": {
+                                    "connection": "@json(item().DestinationConnectionSettings).lakehouseConnectionID"
+                                  },
+                                  "annotations": []
+                                }
+                              },
+                              "annotations": []
+                            }
+                          },
+                          "translator": {
+                            "value": "@json(item().CopyActivitySettings).translator",
+                            "type": "Expression"
+                          },
+                          "enableStaging": false
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 0,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "FullLoadOneObject",
+                        "description": "Take a full snapshot on this object and copy it to the destination",
+                        "dependsOn": []
+                      },
+                      {
+                        "type": "SqlServerStoredProcedure",
+                        "typeProperties": {
+                          "storedProcedureName": {
+                            "value": "@if(equals(pipeline().parameters.Debug, 1),'dbo.UpdateWatermarkColumnValue_DEBUG', 'dbo.UpdateWatermarkColumnValue')",
+                            "type": "Expression"
+                          },
+                          "storedProcedureParameters": {
+                            "Id": {
+                              "value": {
+                                "value": "@item().Id",
+                                "type": "Expression"
+                              },
+                              "type": "Int32"
+                            },
+                            "Type": {
+                              "value": "FullLoad",
+                              "type": "String"
+                            },
+                            "watermarkColumnStartValue": {
+                              "value": "Foo",
+                              "type": "String"
+                            }
+                          }
+                        },
+                        "connectionSettings": {
+                          "name": "PipelineControl",
+                          "properties": {
+                            "type": "FabricSqlDatabase",
+                            "typeProperties": {
+                              "artifactId": "67f48c8a-3935-b59f-4eb3-9018a60de7c2",
+                              "workspaceId": "00000000-0000-0000-0000-000000000000"
+                            },
+                            "externalReferences": {
+                              "connection": "21e098c8-37ce-468a-b1bd-787c9d6750dc"
+                            },
+                            "annotations": []
+                          }
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 0,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "UpdateWatermarkColumnValue_FullLoad",
+                        "description": "Record the LastRunDateTime for a FullLoad",
+                        "dependsOn": [
+                          {
+                            "activity": "FullLoadOneObject",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Lookup",
+                        "typeProperties": {
+                          "source": {
+                            "type": "LakehouseTableSource",
+                            "sqlReaderQuery": {
+                              "value": "SELECT CONVERT( \n        VARCHAR(100), \n        MAX([@{json(item().DataLoadingBehaviorSettings).watermarkColumnName}]), \n        1\n        ) AS CurrentMaxWaterMarkColumnValue \nFROM [@{json(item().DestinationObjectSettings).schema}].[@{json(item().DestinationObjectSettings).table}]",
+                              "type": "Expression"
+                            },
+                            "partitionOption": "None"
+                          },
+                          "datasetSettings": {
+                            "type": "LakehouseTable",
+                            "schema": [],
+                            "connectionSettings": {
+                              "name": "3eda6aaa_223f_4ed3_b583_e018fa03d087",
+                              "properties": {
+                                "type": "Lakehouse",
+                                "typeProperties": {
+                                  "artifactId": "@json(item().DestinationConnectionSettings).lakehouseID",
+                                  "workspaceId": "@json(item().DestinationConnectionSettings).workspaceID",
+                                  "rootFolder": "Tables"
+                                },
+                                "externalReferences": {
+                                  "connection": "@json(item().DestinationConnectionSettings).lakehouseConnectionID"
+                                },
+                                "annotations": []
+                              }
+                            },
+                            "annotations": []
+                          }
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 0,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "GetWatermarkForDelta",
+                        "description": "Query the SINK object to get the max value of the watermark column",
+                        "dependsOn": [
+                          {
+                            "activity": "Wait1",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          },
+                          {
+                            "activity": "RefreshSqlEndpoint1",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          },
+                          {
+                            "activity": "RefreshSqlEndpoint2",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Lookup",
+                        "typeProperties": {
+                          "source": {
+                            "type": "FabricSqlDatabaseSource",
+                            "sqlReaderQuery": {
+                              "value": "SELECT * FROM @{pipeline().parameters.MainControlTableName}\nWHERE\n\tJSON_VALUE(DestinationObjectSettings, '$.schema') = '@{json(item().DestinationObjectSettings).schema}'\nAND JSON_VALUE(DestinationObjectSettings, '$.table') = '@{json(item().DestinationObjectSettings).table}'\nAND JSON_VALUE([DataLoadingBehaviorSettings], '$.dataLoadingBehavior') = 'DeltaLoad'\nAND JSON_VALUE(SourceObjectSettings, '$.Source') = '@{json(item().SourceObjectSettings).Source}'",
+                              "type": "Expression"
+                            },
+                            "partitionOption": "None",
+                            "queryTimeout": "02:00:00"
+                          },
+                          "datasetSettings": {
+                            "type": "FabricSqlDatabaseTable",
+                            "schema": [],
+                            "connectionSettings": {
+                              "name": "PipelineControl",
+                              "properties": {
+                                "type": "FabricSqlDatabase",
+                                "typeProperties": {
+                                  "artifactId": "67f48c8a-3935-b59f-4eb3-9018a60de7c2",
+                                  "workspaceId": "00000000-0000-0000-0000-000000000000"
+                                },
+                                "externalReferences": {
+                                  "connection": "21e098c8-37ce-468a-b1bd-787c9d6750dc"
+                                },
+                                "annotations": []
+                              }
+                            },
+                            "annotations": []
+                          }
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 0,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "Get Delta Load Id",
+                        "description": "Find the Delta Load Id for this table corresponding to the table's Full load",
+                        "dependsOn": [
+                          {
+                            "activity": "UpdateWatermarkColumnValue_FullLoad",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "SqlServerStoredProcedure",
+                        "typeProperties": {
+                          "storedProcedureName": {
+                            "value": "@if(equals(pipeline().parameters.Debug, 1),'dbo.UpdateWatermarkColumnValue_DEBUG', 'dbo.UpdateWatermarkColumnValue')",
+                            "type": "Expression"
+                          },
+                          "storedProcedureParameters": {
+                            "Id": {
+                              "value": {
+                                "value": "@activity('Get Delta Load Id').output.firstRow.Id",
+                                "type": "Expression"
+                              },
+                              "type": "Int32"
+                            },
+                            "Type": {
+                              "value": "Watermark",
+                              "type": "String"
+                            },
+                            "watermarkColumnStartValue": {
+                              "value": {
+                                "value": "@(activity('GetWatermarkForDelta').output.firstRow.CurrentMaxWaterMarkColumnValue",
+                                "type": "Expression"
+                              },
+                              "type": "String"
+                            }
+                          }
+                        },
+                        "connectionSettings": {
+                          "name": "PipelineControl",
+                          "properties": {
+                            "type": "FabricSqlDatabase",
+                            "typeProperties": {
+                              "artifactId": "a60de7c2-9018-4eb3-b59f-393567f48c8a",
+                              "workspaceId": "399062ec-7b1d-4944-a684-ab2ab67a826c"
+                            },
+                            "externalReferences": {
+                              "connection": "21e098c8-37ce-468a-b1bd-787c9d6750dc"
+                            },
+                            "annotations": []
+                          }
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 0,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "UpdateWatermarkColumnValue_Delta_form_Full",
+                        "description": "Record the new Watermark of this Full Load into the associated Delta Control Row.\nNOTE: This ONLY records the Watermark value, NOT the LastRunDateTime for the Delta Control row.",
+                        "state": "Inactive",
+                        "onInactiveMarkAs": "Succeeded",
+                        "dependsOn": [
+                          {
+                            "activity": "GetWatermarkForDelta",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Wait",
+                        "typeProperties": {
+                          "waitTimeInSeconds": {
+                            "value": "@json(item().CopyActivitySettings).waitTime",
+                            "type": "Expression"
+                          }
+                        },
+                        "name": "Wait1",
+                        "state": "Inactive",
+                        "onInactiveMarkAs": "Succeeded",
+                        "dependsOn": [
+                          {
+                            "activity": "Get Delta Load Id",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "RefreshSqlEndpoint",
+                        "typeProperties": {
+                          "workspaceId": "00000000-0000-0000-0000-000000000000",
+                          "sqlEndpointId": "e134feba-29a0-44c2-802d-406868b55639"
+                        },
+                        "externalReferences": {
+                          "connection": "32ef1baa-c1e2-4b85-8e72-7f2df8fccc58"
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 0,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "RefreshSqlEndpoint1",
+                        "dependsOn": [
+                          {
+                            "activity": "Get Delta Load Id",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "RefreshSqlEndpoint",
+                        "typeProperties": {
+                          "workspaceId": "00000000-0000-0000-0000-000000000000",
+                          "sqlEndpointId": "754b11b3-e1d7-4bb1-acb4-335051239dea"
+                        },
+                        "externalReferences": {
+                          "connection": "32ef1baa-c1e2-4b85-8e72-7f2df8fccc58"
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 0,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "RefreshSqlEndpoint2",
+                        "dependsOn": [
+                          {
+                            "activity": "Get Delta Load Id",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "value": "DeltaLoad",
+                    "activities": [
+                      {
+                        "type": "Copy",
+                        "typeProperties": {
+                          "source": {
+                            "type": "SqlServerSource",
+                            "sqlReaderQuery": {
+                              "value": "SELECT * FROM [@{json(item().SourceObjectSettings).schema}].[@{json(item().SourceObjectSettings).table}] \nWHERE [@{json(item().DataLoadingBehaviorSettings).watermarkColumnName}] > '@{json(item().DataLoadingBehaviorSettings).watermarkColumnStartValue}'",
+                              "type": "Expression"
+                            },
+                            "partitionOption": "None",
+                            "queryTimeout": "02:00:00",
+                            "datasetSettings": {
+                              "type": "SqlServerTable",
+                              "typeProperties": {
+                                "database": {
+                                  "value": "@json(item().SourceConnectionSettings).databaseName",
+                                  "type": "Expression"
+                                }
+                              },
+                              "schema": [],
+                              "externalReferences": {
+                                "connection": "@json(item().SourceConnectionSettings).sourceConnectionID"
+                              },
+                              "annotations": []
+                            }
+                          },
+                          "sink": {
+                            "type": "LakehouseTableSink",
+                            "tableActionOption": "Upsert",
+                            "applyVOrder": false,
+                            "upsertSettings": {
+                              "keys": [
+                                "BusinessUnitCode"
+                              ]
+                            },
+                            "datasetSettings": {
+                              "type": "LakehouseTable",
+                              "typeProperties": {
+                                "table": {
+                                  "value": "@{json(item().DestinationObjectSettings).table}",
+                                  "type": "Expression"
+                                }
+                              },
+                              "schema": [],
+                              "connectionSettings": {
+                                "name": "fb5e4fa6_f522_400a_8f51_fd2db1fe066f",
+                                "properties": {
+                                  "type": "Lakehouse",
+                                  "typeProperties": {
+                                    "artifactId": "@json(item().DestinationConnectionSettings).lakehouseID",
+                                    "workspaceId": "@json(item().DestinationConnectionSettings).workspaceID",
+                                    "rootFolder": "Tables"
+                                  },
+                                  "externalReferences": {
+                                    "connection": "@json(item().DestinationConnectionSettings).lakehouseConnectionID"
+                                  },
+                                  "annotations": []
+                                }
+                              },
+                              "annotations": []
+                            }
+                          },
+                          "translator": {
+                            "value": "@json(item().CopyActivitySettings).translator",
+                            "type": "Expression"
+                          },
+                          "enableStaging": false
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 0,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "DeltaLoadOneObject",
+                        "description": "Copy the changed data only from last time via comparing the value in watermark column to identify changes.",
+                        "dependsOn": []
+                      },
+                      {
+                        "type": "Lookup",
+                        "typeProperties": {
+                          "source": {
+                            "type": "LakehouseTableSource",
+                            "sqlReaderQuery": {
+                              "value": "SELECT CONVERT( VARCHAR(100), (MAX([@{json(item().DataLoadingBehaviorSettings).watermarkColumnName}]), \n@{json(item().DataLoadingBehaviorSettings).watermarkConvertStyle})\nAS CurrentMaxWaterMarkColumnValue \nFROM [@{json(item().DestinationObjectSettings).schema}].[@{json(item().DestinationObjectSettings).table}]",
+                              "type": "Expression"
+                            },
+                            "partitionOption": "None"
+                          },
+                          "datasetSettings": {
+                            "type": "LakehouseTable",
+                            "schema": [],
+                            "connectionSettings": {
+                              "name": "43398057_66ff_4459_8c89_0dc4677e3788",
+                              "properties": {
+                                "type": "Lakehouse",
+                                "typeProperties": {
+                                  "artifactId": "@json(item().DestinationConnectionSettings).lakehouseID",
+                                  "workspaceId": "@json(item().DestinationConnectionSettings).workspaceID",
+                                  "rootFolder": "Tables"
+                                },
+                                "externalReferences": {
+                                  "connection": "@json(item().DestinationConnectionSettings).lakehouseConnectionID"
+                                },
+                                "annotations": []
+                              }
+                            },
+                            "annotations": []
+                          }
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 0,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "GetMaxWatermarkValue",
+                        "description": "Query the SINK object to get the max value from watermark column",
+                        "dependsOn": [
+                          {
+                            "activity": "RefreshSqlEndpoint",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "SqlServerStoredProcedure",
+                        "typeProperties": {
+                          "storedProcedureName": {
+                            "value": "@if(equals(pipeline().parameters.Debug, 1),'dbo.UpdateWatermarkColumnValue_DEBUG', 'dbo.UpdateWatermarkColumnValue')",
+                            "type": "Expression"
+                          },
+                          "storedProcedureParameters": {
+                            "Id": {
+                              "value": {
+                                "value": "@item().Id",
+                                "type": "Expression"
+                              },
+                              "type": "Int32"
+                            },
+                            "Type": {
+                              "value": "DeltaLoad",
+                              "type": "String"
+                            },
+                            "watermarkColumnStartValue": {
+                              "value": {
+                                "value": "@activity('GetMaxWatermarkValue').output.firstRow.CurrentMaxWaterMarkColumnValue",
+                                "type": "Expression"
+                              },
+                              "type": "String"
+                            }
+                          }
+                        },
+                        "connectionSettings": {
+                          "name": "PipelineControl",
+                          "properties": {
+                            "type": "FabricSqlDatabase",
+                            "typeProperties": {
+                              "artifactId": "67f48c8a-3935-b59f-4eb3-9018a60de7c2",
+                              "workspaceId": "00000000-0000-0000-0000-000000000000"
+                            },
+                            "externalReferences": {
+                              "connection": "21e098c8-37ce-468a-b1bd-787c9d6750dc"
+                            },
+                            "annotations": []
+                          }
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 0,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "UpdateWatermarkColumnValue_DeltaLoad",
+                        "description": "Update the Control Table with the new Watermark Value",
+                        "dependsOn": [
+                          {
+                            "activity": "GetMaxWatermarkValue",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "RefreshSqlEndpoint",
+                        "typeProperties": {
+                          "workspaceId": "00000000-0000-0000-0000-000000000000",
+                          "sqlEndpointId": "e134feba-29a0-44c2-802d-406868b55639"
+                        },
+                        "externalReferences": {
+                          "connection": "32ef1baa-c1e2-4b85-8e72-7f2df8fccc58"
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 0,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "RefreshSqlEndpoint",
+                        "dependsOn": [
+                          {
+                            "activity": "DeltaLoadOneObject",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "defaultActivities": [
+                  {
+                    "type": "Fail",
+                    "typeProperties": {
+                      "message": "Error on Default",
+                      "errorCode": "1000000"
+                    },
+                    "name": "Fail1",
+                    "dependsOn": []
+                  }
+                ]
+              },
+              "name": "RouteJobsBasedOnLoadingBehavior",
+              "description": "Check the loading behavior for each object if it requires full load or incremental load. If it is Default or FullLoad case, do full load. If it is DeltaLoad case, do incremental load via watermark column to identify changes.",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "ListObjectsFromOneGroup",
+        "description": "List objects from one group and iterate each of them to downstream activities",
+        "dependsOn": []
+      }
+    ],
+    "parameters": {
+      "ObjectsPerGroupToCopy": {
+        "type": "array"
+      },
+      "MainControlTableName": {
+        "type": "string"
+      },
+      "Debug": {
+        "type": "int"
+      }
+    }
+  }
+}
