@@ -20,15 +20,13 @@ SELECT
 	CopyEnabled
 FROM dbo.MainControlTable
 WHERE 
-	JSON_VALUE([SourceObjectSettings], '$.table') = 'COASegValues'
-AND JSON_VALUE([SourceObjectSettings], '$.Source') = 'VSS'		/* Options: WH | CA | VSS */
-
+	JSON_VALUE([SourceObjectSettings], '$.table') = 'BusinessUnit'
 ;
 
 TRUNCATE TABLE dbo.MainControlTable_DEBUG;
 
-EXEC [dbo].[COPY_MainControlTable_for_DEBUG] 387 /* Alt + Shift */
-EXEC [dbo].[COPY_MainControlTable_for_DEBUG] 388
+EXEC [dbo].[COPY_MainControlTable_for_DEBUG] 1
+EXEC [dbo].[COPY_MainControlTable_for_DEBUG] 2
 
 SELECT * FROM dbo.MainControlTable_DEBUG;
 

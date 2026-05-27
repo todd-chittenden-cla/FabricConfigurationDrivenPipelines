@@ -17,9 +17,9 @@ CREATE TABLE [dbo].[MainControlTable](
 	[SourceObjectSettings]			NVARCHAR(MAX) NULL,
 	[SourceConnectionSettings]		NVARCHAR(MAX) NULL,
 	[CopySourceSettings]			NVARCHAR(MAX) NULL,
-	[SinkObjectSettings]			NVARCHAR(MAX) NULL,
-	[SinkConnectionSettings]		NVARCHAR(MAX) NULL,
-	[CopySinkSettings]				NVARCHAR(MAX) NULL,
+	[DestinationObjectSettings]		NVARCHAR(MAX) NULL,
+	[DestinationConnectionSettings]	NVARCHAR(MAX) NULL,
+	[CopyDestinationSettings]		NVARCHAR(MAX) NULL,
 	[CopyActivitySettings]			NVARCHAR(MAX) NULL,
 	[TopLevelPipelineName]			NVARCHAR(MAX) NULL,
 	[ScheduleSettings]				NVARCHAR(MAX) NULL,
@@ -35,16 +35,17 @@ CREATE TABLE [dbo].[MainControlTable](
 GO
 
 
-
+DROP TABLE [dbo].[MainControlTable_DEBUG];
+GO
 
 CREATE TABLE [dbo].[MainControlTable_DEBUG](
 	[Id]							INT		  NOT NULL,
 	[SourceObjectSettings]			NVARCHAR(MAX) NULL,
 	[SourceConnectionSettings]		NVARCHAR(MAX) NULL,
 	[CopySourceSettings]			NVARCHAR(MAX) NULL,
-	[SinkObjectSettings]			NVARCHAR(MAX) NULL,
-	[SinkConnectionSettings]		NVARCHAR(MAX) NULL,
-	[CopySinkSettings]				NVARCHAR(MAX) NULL,
+	[DestinationObjectSettings]		NVARCHAR(MAX) NULL,
+	[DestinationConnectionSettings]	NVARCHAR(MAX) NULL,
+	[CopyDestinationSettings]		NVARCHAR(MAX) NULL,
 	[CopyActivitySettings]			NVARCHAR(MAX) NULL,
 	[TopLevelPipelineName]			NVARCHAR(MAX) NULL,
 	[ScheduleSettings]				NVARCHAR(MAX) NULL,
@@ -69,9 +70,9 @@ CREATE TABLE [dbo].[MainControlTable_BACKUP](
 	[SourceObjectSettings]			NVARCHAR(MAX) NULL,
 	[SourceConnectionSettings]		NVARCHAR(MAX) NULL,
 	[CopySourceSettings]			NVARCHAR(MAX) NULL,
-	[SinkObjectSettings]			NVARCHAR(MAX) NULL,
-	[SinkConnectionSettings]		NVARCHAR(MAX) NULL,
-	[CopySinkSettings]				NVARCHAR(MAX) NULL,	
+	[DestinationObjectSettings]		NVARCHAR(MAX) NULL,
+	[DestinationConnectionSettings]	NVARCHAR(MAX) NULL,
+	[CopyDestinationSettings]		NVARCHAR(MAX) NULL,
     [CopyActivitySettings]			NVARCHAR(MAX) NULL,
 	[TopLevelPipelineName]			NVARCHAR(MAX) NULL,
 	[ScheduleSettings]				NVARCHAR(MAX) NULL,
@@ -87,6 +88,9 @@ CREATE TABLE [dbo].[MainControlTable_BACKUP](
 ) 
 GO
 
+TRUNCATE TABLE dbo.MainControlTable;
 
-
+SELECT * FROM dbo.MainControlTable;
+UPDATE dbo.MainControlTable SET CopyEnabled = 0 WHERE Id = 2;
 GO
+

@@ -53,7 +53,7 @@
                           "sink": {
                             "type": "LakehouseTableSink",
                             "tableActionOption": {
-                              "value": "@json(item().CopyDestinationSettings).tableActionOption",
+                              "value": "@json(item().CopyDestinationSettings).tableAction",
                               "type": "Expression"
                             },
                             "applyVOrder": false,
@@ -170,7 +170,7 @@
                           "source": {
                             "type": "LakehouseTableSource",
                             "sqlReaderQuery": {
-                              "value": "SELECT CONVERT( \n        VARCHAR(100), \n        MAX([@{json(item().DataLoadingBehaviorSettings).watermarkColumnName}]), \n        1\n        ) AS CurrentMaxWaterMarkColumnValue \nFROM [@{json(item().DestinationObjectSettings).schema}].[@{json(item().DestinationObjectSettings).table}]",
+                              "value": "SELECT CONVERT( \n        VARCHAR(100), \n        MAX([LastUpdateDateTime]), \n        1\n        ) AS CurrentMaxWaterMarkColumnValue \nFROM [dbo].[BusinessUnit]",
                               "type": "Expression"
                             },
                             "partitionOption": "None"
@@ -207,19 +207,7 @@
                         "description": "Query the SINK object to get the max value of the watermark column",
                         "dependsOn": [
                           {
-                            "activity": "Wait1",
-                            "dependencyConditions": [
-                              "Succeeded"
-                            ]
-                          },
-                          {
                             "activity": "RefreshSqlEndpoint1",
-                            "dependencyConditions": [
-                              "Succeeded"
-                            ]
-                          },
-                          {
-                            "activity": "RefreshSqlEndpoint2",
                             "dependencyConditions": [
                               "Succeeded"
                             ]
@@ -297,7 +285,7 @@
                             },
                             "watermarkColumnStartValue": {
                               "value": {
-                                "value": "@(activity('GetWatermarkForDelta').output.firstRow.CurrentMaxWaterMarkColumnValue",
+                                "value": "@activity('GetWatermarkForDelta').output.firstRow.CurrentMaxWaterMarkColumnValue",
                                 "type": "Expression"
                               },
                               "type": "String"
@@ -309,8 +297,8 @@
                           "properties": {
                             "type": "FabricSqlDatabase",
                             "typeProperties": {
-                              "artifactId": "a60de7c2-9018-4eb3-b59f-393567f48c8a",
-                              "workspaceId": "399062ec-7b1d-4944-a684-ab2ab67a826c"
+                              "artifactId": "67f48c8a-3935-b59f-4eb3-9018a60de7c2",
+                              "workspaceId": "00000000-0000-0000-0000-000000000000"
                             },
                             "externalReferences": {
                               "connection": "21e098c8-37ce-468a-b1bd-787c9d6750dc"
@@ -327,8 +315,6 @@
                         },
                         "name": "UpdateWatermarkColumnValue_Delta_form_Full",
                         "description": "Record the new Watermark of this Full Load into the associated Delta Control Row.\nNOTE: This ONLY records the Watermark value, NOT the LastRunDateTime for the Delta Control row.",
-                        "state": "Inactive",
-                        "onInactiveMarkAs": "Succeeded",
                         "dependsOn": [
                           {
                             "activity": "GetWatermarkForDelta",
@@ -339,30 +325,11 @@
                         ]
                       },
                       {
-                        "type": "Wait",
-                        "typeProperties": {
-                          "waitTimeInSeconds": {
-                            "value": "@json(item().CopyActivitySettings).waitTime",
-                            "type": "Expression"
-                          }
-                        },
-                        "name": "Wait1",
-                        "state": "Inactive",
-                        "onInactiveMarkAs": "Succeeded",
-                        "dependsOn": [
-                          {
-                            "activity": "Get Delta Load Id",
-                            "dependencyConditions": [
-                              "Succeeded"
-                            ]
-                          }
-                        ]
-                      },
-                      {
                         "type": "RefreshSqlEndpoint",
                         "typeProperties": {
                           "workspaceId": "00000000-0000-0000-0000-000000000000",
-                          "sqlEndpointId": "e134feba-29a0-44c2-802d-406868b55639"
+                          "sqlEndpointId": "e134feba-29a0-44c2-802d-406868b55639",
+                          "recreateTables": false
                         },
                         "externalReferences": {
                           "connection": "32ef1baa-c1e2-4b85-8e72-7f2df8fccc58"
@@ -375,32 +342,6 @@
                           "secureOutput": false
                         },
                         "name": "RefreshSqlEndpoint1",
-                        "dependsOn": [
-                          {
-                            "activity": "Get Delta Load Id",
-                            "dependencyConditions": [
-                              "Succeeded"
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "type": "RefreshSqlEndpoint",
-                        "typeProperties": {
-                          "workspaceId": "00000000-0000-0000-0000-000000000000",
-                          "sqlEndpointId": "754b11b3-e1d7-4bb1-acb4-335051239dea"
-                        },
-                        "externalReferences": {
-                          "connection": "32ef1baa-c1e2-4b85-8e72-7f2df8fccc58"
-                        },
-                        "policy": {
-                          "timeout": "0.12:00:00",
-                          "retry": 0,
-                          "retryIntervalInSeconds": 30,
-                          "secureInput": false,
-                          "secureOutput": false
-                        },
-                        "name": "RefreshSqlEndpoint2",
                         "dependsOn": [
                           {
                             "activity": "Get Delta Load Id",
@@ -443,16 +384,24 @@
                           },
                           "sink": {
                             "type": "LakehouseTableSink",
-                            "tableActionOption": "Upsert",
+                            "tableActionOption": {
+                              "value": "@json(item().CopyDestinationSettings).tableAction",
+                              "type": "Expression"
+                            },
                             "applyVOrder": false,
                             "upsertSettings": {
                               "keys": [
                                 "BusinessUnitCode"
                               ]
                             },
+                            "partitionOption": "None",
                             "datasetSettings": {
                               "type": "LakehouseTable",
                               "typeProperties": {
+                                "schema": {
+                                  "value": "@{json(item().DestinationObjectSettings).schema}",
+                                  "type": "Expression"
+                                },
                                 "table": {
                                   "value": "@{json(item().DestinationObjectSettings).table}",
                                   "type": "Expression"
@@ -608,7 +557,8 @@
                         "type": "RefreshSqlEndpoint",
                         "typeProperties": {
                           "workspaceId": "00000000-0000-0000-0000-000000000000",
-                          "sqlEndpointId": "e134feba-29a0-44c2-802d-406868b55639"
+                          "sqlEndpointId": "e134feba-29a0-44c2-802d-406868b55639",
+                          "recreateTables": false
                         },
                         "externalReferences": {
                           "connection": "32ef1baa-c1e2-4b85-8e72-7f2df8fccc58"
@@ -664,7 +614,8 @@
         "type": "string"
       },
       "Debug": {
-        "type": "int"
+        "type": "int",
+        "defaultValue": 0
       }
     }
   }
