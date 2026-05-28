@@ -1,8 +1,7 @@
 
-
 /*
 
-Usefull JSON Properties:
+Usefull JSON Properties for Dynamic Content:
 
 SourceConnectionSettings:
 	@json(item().SourceConnectionSettings).sourceConnectionID
@@ -16,29 +15,31 @@ SourceObjectSettings:
 CopySourceSettings:
 	@json(item().CopySourceSettings).sqlReaderQuery
 
-SinkObjectSettings:
-	@json(item().SinkObjectSettings).schema  @{json(item().SinkObjectSettings).schema}
-	@json(item().SinkObjectSettings).table
+DestinationObjectSettings:
+	@json(item().DestinationObjectSettings).schema or @{json(item().DestinationObjectSettings).schema}
+	@json(item().DestinationObjectSettings).table
 
-SinkConnectionSettings:
-	@json(item().SinkConnectionSettings).warehouseConnectionID
-	@json(item().SinkConnectionSettings).lakehouseConnectionID
-	@json(item().SinkConnectionSettings).workspaceID
-	@json(item().SinkConnectionSettings).warehouseID
-	@json(item().SinkConnectionSettings).lakehouseID
-	@json(item().SinkConnectionSettings).sqlConnectionString
+DestinationConnectionSettings:
+	@json(item().DestinationConnectionSettings).warehouseConnectionID
+	@json(item().DestinationConnectionSettings).lakehouseConnectionID
+	@json(item().DestinationConnectionSettings).workspaceID
+	@json(item().DestinationConnectionSettings).warehouseID
+	@json(item().DestinationConnectionSettings).lakehouseID
+	@json(item().DestinationConnectionSettings).sqlConnectionString
 
-CopySinkSettings:
+CopyDestinationSettings:
 
-	IF OBJECT_ID('@{json(item().SinkObjectSettings).schema}.@{json(item().SinkObjectSettings).table}', 'U') IS NOT NULL 
-@{json(item().CopySinkSettings).preCopyOption} TABLE @{json(item().SinkObjectSettings).schema}.@{json(item().SinkObjectSettings).table};
+	IF OBJECT_ID('@{json(item().DestinationObjectSettings).schema}.@{json(item().DestinationbjectSettings).table}', 'U') IS NOT NULL 
+@{json(item().CopyDestinationSettings).preCopyOption} TABLE @{json(item().DestinationObjectSettings).schema}.@{json(item().DestinationObjectSettings).table};
 
 
-	@{json(item().CopySinkSettings).preCopyOption}
 
-	@json(item().CopySinkSettings).preCopyScript
-	@json(item().CopySinkSettings).tableOption
-	@json(item().CopySinkSettings).waitTime
+	@{json(item().CopyDestinationSettings).preCopyOption}
+
+	
+	@json(item().CopyDestinationSettings).tableAction
+
+	@json(item().CopyDestinationSettings).waitTime
 
 MergeProcedureSettings:
 	@json(item().MergeProcedureSettings).mergeConnectionID
@@ -60,7 +61,7 @@ ScheduleSettings:
 DataLoadingBehaviorSettings
 	@json(item().DataLoadingBehaviorSettings).dataLoadingBehavior
 	@{json(item().DataLoadingBehaviorSettings).watermarkColumnName}
-	@json(item().DataLoadingBehaviorSettings).watermarkColumnType
+	@{json(item().DataLoadingBehaviorSettings).watermarkColumnType}
 	@json(item().DataLoadingBehaviorSettings).watermarkColumnStartValue
 
 

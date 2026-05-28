@@ -13,7 +13,7 @@
               "type": "Switch",
               "typeProperties": {
                 "on": {
-                  "value": "@json(item().DataLoadingBehaviorSettings).dataLoadingBehavior",
+                  "value": "@item().DataLoadingBehavior",
                   "type": "Expression"
                 },
                 "cases": [
@@ -31,21 +31,21 @@
                               "type": "SqlServerTable",
                               "typeProperties": {
                                 "schema": {
-                                  "value": "@json(item().SourceObjectSettings).schema",
+                                  "value": "@item().SourceSchema",
                                   "type": "Expression"
                                 },
                                 "table": {
-                                  "value": "@json(item().SourceObjectSettings).table",
+                                  "value": "@item().SourceTable",
                                   "type": "Expression"
                                 },
                                 "database": {
-                                  "value": "@json(item().SourceConnectionSettings).databaseName",
+                                  "value": "@item().SourceDatabaseName",
                                   "type": "Expression"
                                 }
                               },
                               "schema": [],
                               "externalReferences": {
-                                "connection": "@json(item().SourceConnectionSettings).sourceConnectionID"
+                                "connection": "@item().SourceConnectionID"
                               },
                               "annotations": []
                             }
@@ -53,7 +53,7 @@
                           "sink": {
                             "type": "LakehouseTableSink",
                             "tableActionOption": {
-                              "value": "@json(item().CopyDestinationSettings).tableActionOption",
+                              "value": "@item().TableAction",
                               "type": "Expression"
                             },
                             "applyVOrder": false,
@@ -63,11 +63,11 @@
                               "type": "LakehouseTable",
                               "typeProperties": {
                                 "schema": {
-                                  "value": "@json(item().DestinationObjectSettings).schema",
+                                  "value": "@item().DestinationSchema",
                                   "type": "Expression"
                                 },
                                 "table": {
-                                  "value": "@json(item().DestinationObjectSettings).table",
+                                  "value": "@item().DestinationTable",
                                   "type": "Expression"
                                 }
                               },
@@ -77,12 +77,12 @@
                                 "properties": {
                                   "type": "Lakehouse",
                                   "typeProperties": {
-                                    "artifactId": "@json(item().DestinationConnectionSettings).lakehouseID",
-                                    "workspaceId": "@json(item().DestinationConnectionSettings).workspaceID",
+                                    "artifactId": "@item().LakehouseID",
+                                    "workspaceId": "@item().WorkspaceID",
                                     "rootFolder": "Tables"
                                   },
                                   "externalReferences": {
-                                    "connection": "@json(item().DestinationConnectionSettings).lakehouseConnectionID"
+                                    "connection": "@item().LakehouseConnectionID"
                                   },
                                   "annotations": []
                                 }
@@ -91,7 +91,7 @@
                             }
                           },
                           "translator": {
-                            "value": "@json(item().CopyActivitySettings).translator",
+                            "value": "@item().MappingTranslator",
                             "type": "Expression"
                           },
                           "enableStaging": false
@@ -127,7 +127,7 @@
                               "type": "String"
                             },
                             "watermarkColumnStartValue": {
-                              "value": "Foo",
+                              "value": "Not Needed",
                               "type": "String"
                             }
                           }
@@ -170,7 +170,7 @@
                           "source": {
                             "type": "LakehouseTableSource",
                             "sqlReaderQuery": {
-                              "value": "SELECT CONVERT( \n        VARCHAR(100), \n        MAX([@{json(item().DataLoadingBehaviorSettings).watermarkColumnName}]), \n        1\n        ) AS CurrentMaxWaterMarkColumnValue \nFROM [@{json(item().DestinationObjectSettings).schema}].[@{json(item().DestinationObjectSettings).table}]",
+                              "value": "@item().WatermarkQuery",
                               "type": "Expression"
                             },
                             "partitionOption": "None"
@@ -183,12 +183,12 @@
                               "properties": {
                                 "type": "Lakehouse",
                                 "typeProperties": {
-                                  "artifactId": "@json(item().DestinationConnectionSettings).lakehouseID",
-                                  "workspaceId": "@json(item().DestinationConnectionSettings).workspaceID",
+                                  "artifactId": "@item().LakehouseID",
+                                  "workspaceId": "@item().WorkspaceID",
                                   "rootFolder": "Tables"
                                 },
                                 "externalReferences": {
-                                  "connection": "@json(item().DestinationConnectionSettings).lakehouseConnectionID"
+                                  "connection": "@item().LakehouseConnectionID"
                                 },
                                 "annotations": []
                               }
@@ -206,12 +206,6 @@
                         "name": "GetWatermarkForDelta",
                         "description": "Query the SINK object to get the max value of the watermark column",
                         "dependsOn": [
-                          {
-                            "activity": "Wait1",
-                            "dependencyConditions": [
-                              "Succeeded"
-                            ]
-                          },
                           {
                             "activity": "RefreshSqlEndpoint1",
                             "dependencyConditions": [
@@ -232,7 +226,7 @@
                           "source": {
                             "type": "FabricSqlDatabaseSource",
                             "sqlReaderQuery": {
-                              "value": "SELECT * FROM @{pipeline().parameters.MainControlTableName}\nWHERE\n\tJSON_VALUE(DestinationObjectSettings, '$.schema') = '@{json(item().DestinationObjectSettings).schema}'\nAND JSON_VALUE(DestinationObjectSettings, '$.table') = '@{json(item().DestinationObjectSettings).table}'\nAND JSON_VALUE([DataLoadingBehaviorSettings], '$.dataLoadingBehavior') = 'DeltaLoad'\nAND JSON_VALUE(SourceObjectSettings, '$.Source') = '@{json(item().SourceObjectSettings).Source}'",
+                              "value": "SELECT * FROM @{pipeline().parameters.MainControlTableName}\nWHERE\n\t[DestinationSchema] = '@{item().DestinationSchema}'\nAND [DestinationTable]= '@{item().DestinationTable}'\nAND DataLoadingBehavior = 'DeltaLoad'\nAND [Source] = '@{item().Source}'",
                               "type": "Expression"
                             },
                             "partitionOption": "None",
@@ -297,7 +291,7 @@
                             },
                             "watermarkColumnStartValue": {
                               "value": {
-                                "value": "@(activity('GetWatermarkForDelta').output.firstRow.CurrentMaxWaterMarkColumnValue",
+                                "value": "@activity('GetWatermarkForDelta').output.firstRow.CurrentMaxWaterMarkColumnValue",
                                 "type": "Expression"
                               },
                               "type": "String"
@@ -309,8 +303,8 @@
                           "properties": {
                             "type": "FabricSqlDatabase",
                             "typeProperties": {
-                              "artifactId": "a60de7c2-9018-4eb3-b59f-393567f48c8a",
-                              "workspaceId": "399062ec-7b1d-4944-a684-ab2ab67a826c"
+                              "artifactId": "67f48c8a-3935-b59f-4eb3-9018a60de7c2",
+                              "workspaceId": "00000000-0000-0000-0000-000000000000"
                             },
                             "externalReferences": {
                               "connection": "21e098c8-37ce-468a-b1bd-787c9d6750dc"
@@ -327,8 +321,6 @@
                         },
                         "name": "UpdateWatermarkColumnValue_Delta_form_Full",
                         "description": "Record the new Watermark of this Full Load into the associated Delta Control Row.\nNOTE: This ONLY records the Watermark value, NOT the LastRunDateTime for the Delta Control row.",
-                        "state": "Inactive",
-                        "onInactiveMarkAs": "Succeeded",
                         "dependsOn": [
                           {
                             "activity": "GetWatermarkForDelta",
@@ -339,30 +331,11 @@
                         ]
                       },
                       {
-                        "type": "Wait",
-                        "typeProperties": {
-                          "waitTimeInSeconds": {
-                            "value": "@json(item().CopyActivitySettings).waitTime",
-                            "type": "Expression"
-                          }
-                        },
-                        "name": "Wait1",
-                        "state": "Inactive",
-                        "onInactiveMarkAs": "Succeeded",
-                        "dependsOn": [
-                          {
-                            "activity": "Get Delta Load Id",
-                            "dependencyConditions": [
-                              "Succeeded"
-                            ]
-                          }
-                        ]
-                      },
-                      {
                         "type": "RefreshSqlEndpoint",
                         "typeProperties": {
                           "workspaceId": "00000000-0000-0000-0000-000000000000",
-                          "sqlEndpointId": "e134feba-29a0-44c2-802d-406868b55639"
+                          "sqlEndpointId": "e134feba-29a0-44c2-802d-406868b55639",
+                          "recreateTables": false
                         },
                         "externalReferences": {
                           "connection": "32ef1baa-c1e2-4b85-8e72-7f2df8fccc58"
@@ -388,7 +361,8 @@
                         "type": "RefreshSqlEndpoint",
                         "typeProperties": {
                           "workspaceId": "00000000-0000-0000-0000-000000000000",
-                          "sqlEndpointId": "754b11b3-e1d7-4bb1-acb4-335051239dea"
+                          "sqlEndpointId": "754b11b3-e1d7-4bb1-acb4-335051239dea",
+                          "recreateTables": false
                         },
                         "externalReferences": {
                           "connection": "32ef1baa-c1e2-4b85-8e72-7f2df8fccc58"
@@ -421,7 +395,7 @@
                           "source": {
                             "type": "SqlServerSource",
                             "sqlReaderQuery": {
-                              "value": "SELECT * FROM [@{json(item().SourceObjectSettings).schema}].[@{json(item().SourceObjectSettings).table}] \nWHERE [@{json(item().DataLoadingBehaviorSettings).watermarkColumnName}] > '@{json(item().DataLoadingBehaviorSettings).watermarkColumnStartValue}'",
+                              "value": "@item().SourceQuery",
                               "type": "Expression"
                             },
                             "partitionOption": "None",
@@ -430,31 +404,40 @@
                               "type": "SqlServerTable",
                               "typeProperties": {
                                 "database": {
-                                  "value": "@json(item().SourceConnectionSettings).databaseName",
+                                  "value": "@item().SourceDatabaseName",
                                   "type": "Expression"
                                 }
                               },
                               "schema": [],
                               "externalReferences": {
-                                "connection": "@json(item().SourceConnectionSettings).sourceConnectionID"
+                                "connection": "@item().SourceConnectionID"
                               },
                               "annotations": []
                             }
                           },
                           "sink": {
                             "type": "LakehouseTableSink",
-                            "tableActionOption": "Upsert",
+                            "tableActionOption": {
+                              "value": "@item().TableAction",
+                              "type": "Expression"
+                            },
                             "applyVOrder": false,
                             "upsertSettings": {
-                              "keys": [
-                                "BusinessUnitCode"
-                              ]
+                              "keys": {
+                                "value": "@json(item().UpsertKeys)",
+                                "type": "Expression"
+                              }
                             },
+                            "partitionOption": "None",
                             "datasetSettings": {
                               "type": "LakehouseTable",
                               "typeProperties": {
+                                "schema": {
+                                  "value": "@item().DestinationSchema",
+                                  "type": "Expression"
+                                },
                                 "table": {
-                                  "value": "@{json(item().DestinationObjectSettings).table}",
+                                  "value": "@item().DestinationTable",
                                   "type": "Expression"
                                 }
                               },
@@ -464,12 +447,12 @@
                                 "properties": {
                                   "type": "Lakehouse",
                                   "typeProperties": {
-                                    "artifactId": "@json(item().DestinationConnectionSettings).lakehouseID",
-                                    "workspaceId": "@json(item().DestinationConnectionSettings).workspaceID",
+                                    "artifactId": "@item().LakehouseID",
+                                    "workspaceId": "@item().WorkspaceID",
                                     "rootFolder": "Tables"
                                   },
                                   "externalReferences": {
-                                    "connection": "@json(item().DestinationConnectionSettings).lakehouseConnectionID"
+                                    "connection": "@item().LakehouseConnectionID"
                                   },
                                   "annotations": []
                                 }
@@ -478,7 +461,7 @@
                             }
                           },
                           "translator": {
-                            "value": "@json(item().CopyActivitySettings).translator",
+                            "value": "@item().MappingTranslator",
                             "type": "Expression"
                           },
                           "enableStaging": false
@@ -500,7 +483,7 @@
                           "source": {
                             "type": "LakehouseTableSource",
                             "sqlReaderQuery": {
-                              "value": "SELECT CONVERT( VARCHAR(100), (MAX([@{json(item().DataLoadingBehaviorSettings).watermarkColumnName}]), \n@{json(item().DataLoadingBehaviorSettings).watermarkConvertStyle})\nAS CurrentMaxWaterMarkColumnValue \nFROM [@{json(item().DestinationObjectSettings).schema}].[@{json(item().DestinationObjectSettings).table}]",
+                              "value": "@item().WatermarkQuery",
                               "type": "Expression"
                             },
                             "partitionOption": "None"
@@ -513,12 +496,12 @@
                               "properties": {
                                 "type": "Lakehouse",
                                 "typeProperties": {
-                                  "artifactId": "@json(item().DestinationConnectionSettings).lakehouseID",
-                                  "workspaceId": "@json(item().DestinationConnectionSettings).workspaceID",
+                                  "artifactId": "@item().LakehouseID",
+                                  "workspaceId": "@item().WorkspaceID",
                                   "rootFolder": "Tables"
                                 },
                                 "externalReferences": {
-                                  "connection": "@json(item().DestinationConnectionSettings).lakehouseConnectionID"
+                                  "connection": "@item().LakehouseConnectionID"
                                 },
                                 "annotations": []
                               }
@@ -538,6 +521,12 @@
                         "dependsOn": [
                           {
                             "activity": "RefreshSqlEndpoint",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          },
+                          {
+                            "activity": "RefreshSqlEndpoint3",
                             "dependencyConditions": [
                               "Succeeded"
                             ]
@@ -608,7 +597,8 @@
                         "type": "RefreshSqlEndpoint",
                         "typeProperties": {
                           "workspaceId": "00000000-0000-0000-0000-000000000000",
-                          "sqlEndpointId": "e134feba-29a0-44c2-802d-406868b55639"
+                          "sqlEndpointId": "e134feba-29a0-44c2-802d-406868b55639",
+                          "recreateTables": false
                         },
                         "externalReferences": {
                           "connection": "32ef1baa-c1e2-4b85-8e72-7f2df8fccc58"
@@ -621,6 +611,33 @@
                           "secureOutput": false
                         },
                         "name": "RefreshSqlEndpoint",
+                        "dependsOn": [
+                          {
+                            "activity": "DeltaLoadOneObject",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "RefreshSqlEndpoint",
+                        "typeProperties": {
+                          "workspaceId": "00000000-0000-0000-0000-000000000000",
+                          "sqlEndpointId": "754b11b3-e1d7-4bb1-acb4-335051239dea",
+                          "recreateTables": false
+                        },
+                        "externalReferences": {
+                          "connection": "32ef1baa-c1e2-4b85-8e72-7f2df8fccc58"
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 0,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "RefreshSqlEndpoint3",
                         "dependsOn": [
                           {
                             "activity": "DeltaLoadOneObject",
@@ -658,13 +675,77 @@
     ],
     "parameters": {
       "ObjectsPerGroupToCopy": {
-        "type": "array"
+        "type": "array",
+        "defaultValue": [
+          {
+            "Id": 4,
+            "Source": "IMDB",
+            "SourceSchema": "dbo",
+            "SourceTable": "Genre",
+            "SourceConnectionID": "43e59bcd-34ca-4d12-a331-e57b64357a2f",
+            "SourceDatabaseName": "IMDB",
+            "SourceQuery": "SELECT * FROM [dbo].[Genre] \r\n    WHERE [ROWVERSION] >\r\n    0",
+            "DestinationSchema": "dbo",
+            "DestinationTable": "Genre",
+            "WorkspaceID": "399062ec-7b1d-4944-a684-ab2ab67a826c",
+            "LakehouseConnectionID": "758f4778-cc01-43dd-80a2-3c380ff06741",
+            "LakehouseID": "f0b65072-f2b3-49ba-8723-53c377a84ec6",
+            "SQLConnectionString": "nv664whn3zsefbhnfzmjkcyr6a-5rrjaoi5pncetjuevmvlm6ucnq.datawarehouse.fabric.microsoft.com",
+            "DestinationDatabaseName": "lh_Bronze_IMDB",
+            "TableAction": "Upsert",
+            "MappingTranslator": null,
+            "TopLevelPipelineName": "Top Level Delta",
+            "ScheduleSettings": "{ \"scheduleID\": \"N/A\" }",
+            "DataLoadingBehavior": "DeltaLoad",
+            "WatermarkColumnName": "ROWVERSION",
+            "WatermarkColumnType": "TIMESTAMP",
+            "watermarkColumnStartValue": "0",
+            "WatermarkQuery": "SELECT MAX(CAST([ROWVERSION] AS BIGINT)) AS [CurrentMaxWaterMarkColumnValue] FROM [dbo].[Genre]",
+            "UpsertKeys": "[ \"GenreKey\" ]",
+            "TaskId": 0,
+            "CopyEnabled": true,
+            "LastRunDateTime": null,
+            "RowNumber": 1
+          },
+          {
+            "Id": 2,
+            "Source": "PowerBIDW",
+            "SourceSchema": "dbo",
+            "SourceTable": "BusinessUnit",
+            "SourceConnectionID": "bef20cc1-bad8-481f-a144-56ce175629ea",
+            "SourceDatabaseName": "PowerBIDW",
+            "SourceQuery": "SELECT * FROM [dbo].[BusinessUnit] \r\n    WHERE [LastUpdateDateTime] >\r\n    '01/01/2025'",
+            "DestinationSchema": "dbo",
+            "DestinationTable": "BusinessUnit",
+            "WorkspaceID": "399062ec-7b1d-4944-a684-ab2ab67a826c",
+            "LakehouseConnectionID": "758f4778-cc01-43dd-80a2-3c380ff06741",
+            "LakehouseID": "7757cf9d-9d5d-4446-af76-0c44d18fe317",
+            "SQLConnectionString": "nv664whn3zsefbhnfzmjkcyr6a-5rrjaoi5pncetjuevmvlm6ucnq.datawarehouse.fabric.microsoft.com",
+            "DestinationDatabaseName": "lh_Bronze_PowerBIDW",
+            "TableAction": "Upsert",
+            "MappingTranslator": null,
+            "TopLevelPipelineName": "Top Level Delta",
+            "ScheduleSettings": "{ \"scheduleID\": \"N/A\" }",
+            "DataLoadingBehavior": "DeltaLoad",
+            "WatermarkColumnName": "LastUpdateDateTime",
+            "WatermarkColumnType": "DATETIME",
+            "watermarkColumnStartValue": "01/01/2025",
+            "WatermarkQuery": "SELECT MAX(CAST([LastUpdateDateTime] AS DATETIME2)) AS [CurrentMaxWaterMarkColumnValue] FROM [dbo].[BusinessUnit]",
+            "UpsertKeys": "[ \"BusinessUnitCode\" ]",
+            "TaskId": 0,
+            "CopyEnabled": true,
+            "LastRunDateTime": null,
+            "RowNumber": 2
+          }
+        ]
       },
       "MainControlTableName": {
-        "type": "string"
+        "type": "string",
+        "defaultValue": "dbo.MainControlTable_JSON_FLATTENED"
       },
       "Debug": {
-        "type": "int"
+        "type": "int",
+        "defaultValue": 0
       }
     }
   }
