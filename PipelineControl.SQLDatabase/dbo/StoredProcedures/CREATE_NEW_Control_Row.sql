@@ -6,7 +6,7 @@ CREATE   PROCEDURE dbo.CREATE_NEW_Control_Row
     @SourceTableName	    NVARCHAR(100), 
     @KeyColumns			    NVARCHAR(200),	    /* Comma Separated list ["SysRowID"] or ["ID, Name"] */	
     @WatermarkColumnName    NVARCHAR(200),	    /* Hopefully something like [LastUpdateDateTime] */
-    @WatermarkColumnType    NVARCHAR(100),      /* DATETIME | TIMESTAMP etc. */
+    @WatermarkColumnType    NVARCHAR(100),      /* SUPPORTED: DATETIME | TIMESTAMP | ROWVERSION | INT */
     @WatermarkStart         NVARCHAR(100),      /* Example: 1/01/2025 | 0x00000000000 */
     @SinkSchemaName		    NVARCHAR(100),	    /* Typically the same as the SourceSchemaName */
     @SinkTableName		    NVARCHAR(100)	    /* Typically the same as the SourceTableName */
@@ -37,7 +37,7 @@ DECLARE @WorkspaceID				NVARCHAR(100)	= '399062ec-7b1d-4944-a684-ab2ab67a826c'; 
 DECLARE @LakehouseConnectionID		NVARCHAR(100)	= '758f4778-cc01-43dd-80a2-3c380ff06741'; /* From Connections and Gateways, Settings */
 
 /* Some variables that are based on the source system: */
-DECLARE @SourceConnectionID NVARCHAR(100)	= CASE @Source  WHEN 'PowerBIDW'	THEN 'bef20cc1-bad8-481f-a144-56ce175629ea' /* can be gotten from the browser */
+DECLARE @SourceConnectionID NVARCHAR(100)	= CASE @Source  WHEN 'PowerBIDW'	THEN 'bef20cc1-bad8-481f-a144-56ce175629ea' /* from Connections and Gateways */
 															WHEN 'IMDB'			THEN '43e59bcd-34ca-4d12-a331-e57b64357a2f'
 															ELSE 'Hello World'
 															END;
@@ -47,12 +47,12 @@ DECLARE @DatabaseName	NVARCHAR(100)		= CASE @Source	WHEN 'PowerBIDW'	THEN 'Power
 															ELSE 'Hello World'
 															END;
 
-DECLARE @LakehouseID	NVARCHAR(100)		= CASE @Source	WHEN 'PowerBIDW'	THEN '7757cf9d-9d5d-4446-af76-0c44d18fe317'
+DECLARE @LakehouseID	NVARCHAR(100)		= CASE @Source	WHEN 'PowerBIDW'	THEN '7757cf9d-9d5d-4446-af76-0c44d18fe317' /* From the browser / URL */
                                                             WHEN 'IMDB'         THEN 'f0b65072-f2b3-49ba-8723-53c377a84ec6'
 															ELSE 'Hello World'
 															END;
 
-DECLARE @LakehouseName		NVARCHAR(100)	= CASE @Source	WHEN 'PowerBIDW'	THEN 'lh_Bronze_PowerBIDW'
+DECLARE @LakehouseName	NVARCHAR(100)		= CASE @Source	WHEN 'PowerBIDW'	THEN 'lh_Bronze_PowerBIDW'
                                                             WHEN 'IMDB'         THEN 'lh_Bronze_IMDB'
 															ELSE 'Hello World'
 															END;
@@ -75,7 +75,7 @@ DECLARE @ScheduleIDDELTA	NVARCHAR(100)	=	'N/A' /*	CASE @SourceSystem	WHEN 'WH'		
 																	ELSE 'BAR'
 																	END */;
 
-
+/* Should not need to edit anything below this line. */
 
 INSERT INTO [dbo].[MainControlTable] (						
 	[SourceObjectSettings],
@@ -99,12 +99,11 @@ SELECT
 	[CopySourceSettings]			= '{ "partitionOption": "None", "sqlReaderQuery": null, "partitionLowerBound": null, "partitionUpperBound": null, "partitionColumnName": null, "partitionNames": null }',
 	[DestinationObjectSettings]		= '{ "schema": "' + @SinkSchemaName + '", "table":"' + @SinkTableName + '" }',
 	[DestinationConnectionSettings]	= '{ "workspaceID": "' + @WorkspaceID + '", "lakehouseConnectionID": "' + @LakehouseConnectionID + '", "lakehouseID": "' + @LakehouseID + '", "sqlConnectionString": "' + @ServerGUID + '.datawarehouse.fabric.microsoft.com", "databaseName": "' + @LakehouseName + '" }',
-	[CopyDestinationSettings]		= '{ "preCopyOption": "TRUNCATE", "tableAction":"Overwrite", "writeBehavior": "insert"}',
---  [CopyDestinationSettings]		= '{ "preCopyOption": "TRUNCATE", "preCopyScript":"IF OBJECT_ID(''' + @SinkSchemaName + '.' + @SinkTableName + ''', ''U'') IS NOT NULL TRUNCATE TABLE ' + @SinkSchemaName + '.' + @SinkTableName + ';", "tableOption":"autoCreate", "writeBehavior": "insert"}',
+	[CopyDestinationSettings]		= '{ "tableAction":"Overwrite", "keys": ' + @KeyColumns + ' }',
 	[CopyActivitySettings]			= '{ "translator": null }',
 	[TopLevelPipelineName]			= 'Top Level Full',
 	[ScheduleSettings]				= '{ "scheduleID": "' + @ScheduleIDFULL + '" }',
-	[DataLoadingBehaviorSettings]	= '{ "dataLoadingBehavior": "FullLoad" }	',
+	[DataLoadingBehaviorSettings]	= '{ "dataLoadingBehavior": "FullLoad", "watermarkColumnName": "' + @WatermarkColumnName + '","watermarkColumnType": "' + @WatermarkColumnType + '",  "watermarkColumnStartValue": "0"} ',
 	[TaskId]						= 0,
 	[CopyEnabled]					= 1
 
@@ -116,7 +115,7 @@ UNION
 	[CopySourceSettings]			= '{ "partitionOption": "None", "sqlReaderQuery": null, "partitionLowerBound": null, "partitionUpperBound": null, "partitionColumnName": null, "partitionNames": null }',
 	[DestinationObjectSettings]		= '{ "schema": "' + @SinkSchemaName + '", "table":"' + @SinkTableName + '" }',
 	[DestinationConnectionSettings]	= '{ "workspaceID": "' + @WorkspaceID + '", "lakehouseConnectionID": "' + @LakehouseConnectionID + '", "lakehouseID": "' + @LakehouseID + '", "sqlConnectionString": "' + @ServerGUID + '.datawarehouse.fabric.microsoft.com", "databaseName": "' + @LakehouseName + '" }',
-	[CopyDestinationSettings]		= '{ "preCopyScript": null, "tableAction": null, "writeBehavior": "Upsert", "upsertSettings": { "keys": ' + @KeyColumns + ' , "interimSchemaName": "" } }',
+	[CopyDestinationSettings]		= '{ "tableAction": "Upsert", "keys": ' + @KeyColumns + ' }',
 	[CopyActivitySettings]			= '{ "translator": null }',
 	[TopLevelPipelineName]			= 'Top Level Delta',
 	[ScheduleSettings]				= '{ "scheduleID": "' + @ScheduleIDDELTA + '" }',

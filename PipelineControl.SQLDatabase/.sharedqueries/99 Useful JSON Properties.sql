@@ -61,7 +61,7 @@ ScheduleSettings:
 DataLoadingBehaviorSettings
 	@json(item().DataLoadingBehaviorSettings).dataLoadingBehavior
 	@{json(item().DataLoadingBehaviorSettings).watermarkColumnName}
-	@json(item().DataLoadingBehaviorSettings).watermarkColumnType
+	@{json(item().DataLoadingBehaviorSettings).watermarkColumnType}
 	@json(item().DataLoadingBehaviorSettings).watermarkColumnStartValue
 
 

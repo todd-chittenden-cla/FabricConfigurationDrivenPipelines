@@ -157,7 +157,7 @@
       },
       "MainControlTableName": {
         "type": "string",
-        "defaultValue": "dbo.MainControlTable"
+        "defaultValue": "dbo.MainControlTable_JSON_FLATTENED"
       },
       "Debug": {
         "type": "int",
