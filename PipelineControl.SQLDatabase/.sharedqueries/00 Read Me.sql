@@ -34,10 +34,8 @@ Shared Queries in this Project:
 
 03 COPY Main Control Table for DEBUG
 	This is a Stored Procedure that copies a single row from the Main Control Table to the DEBUG table to be
-	used by the DEBUG pipeline set. It accepts [Id] as an input parameter. If the row already exists in the DEBUG
+	used when the DEBUG parameter is set. It accepts [Id] as an input parameter. If the row already exists in the DEBUG
 	table, it is first deleted. Some columns are skipped or otherwise overridden during the copy:
-	* [TopLevelPipelineName]	Set to "Top Level DEBUG"
-	* [ScheduleSettings]		Not used at this time.
 	* [CopyEnabled]				Set to 1
 	* [LastRunDateTime]			Set to NULL
 
@@ -46,10 +44,23 @@ Shared Queries in this Project:
 	The development process should be to copy a row over to the DEBUG table, run the DEBUG pipelines to verify results,
 	make appropriate changes until the run is successful, then copy the row back to the Production table. This is
 	a poor man's source control. The procedure accepts [Id] as an input parameter, and also runs the BACKUP operation
-	(see above) before copying the data over. Some columns are skipped while copying back:
-	* [TopLevelPipelineName]
-	* [ScheduleSettings]    
-	* [CopyEnabled]
+	(see above) before copying the data over. Some columns are skipped while copying back:  
+	* [TopLevelPipelineName] ignored.
+	* [ScheduleSettings] 	ignored
+	* [CopyEnabled] 		ignored
+	* [LastRunDateTime] 	ignored
+
+
+05 CREATE PROC Update Watermark Column Value
+	This is a stored procedure that updates either the LastRunDateTime, the WatermarkColumnValue, or both.
+	* Immediately after a Full Load, only the LastRunDateTime
+	* As the last step of a Full Load, only the WatermarkColumnValue for the complimentary Delta row.
+	* After a Delta load: both
+
+06 CREATE PROC Update Watermark Column DEBUG
+	(Same as above, but targets the MainControlTable_DEBUG)
+
+
 
 10 CREATE PROC NEW Control Row
 	This is a stored procedure that handles populating a new Control Row.
@@ -60,11 +71,18 @@ Shared Queries in this Project:
 	of the script:
 
 	This procedure has multiple input parameters:
-	* @SourceSystem			The two or three-letter code representing the source system ( WH | CA | VSS )
+	* @Source				Code or phrase representing the source system 
 	* @SourceSchemaName		Typically "dbo" but may differ depending on the database
 	* @SourceTableName		Self explanatory
-	* @SinkSchemaName		Typcially the same as the Source Schema
-	* @SinkTableName		Usually can be the same as the Source table name.	
+	* @KeyColumns			Comma Separated list ["SysRowID"] or ["ID, Name"]
+    * @WatermarkColumnName  Hopefully something like [LastUpdateDateTime] 
+    * @WatermarkColumnType  SUPPORTED: DATETIME | TIMESTAMP | ROWVERSION | INT | BIGINT
+    * @WatermarkStart       Example: 1/01/2025 | 0
+
+	* @SinkSchemaName		Typcially the same as the Source Schema. May be different if all sources dump to one single
+							Lakehouse that uses schema to differentiate.
+	* @SinkTableName		Typically the same as the Source Table.	
+
 
 	Based on the Source System, various other variables are set. In the end, these variables are used during the
 	two INSERT statements that follow. 
@@ -72,11 +90,20 @@ Shared Queries in this Project:
 	IMPORTANT: Edit the various GUID values for Connection ID, Workspace ID, Lakehouse ID and Name, etc. to match
 				your environment.
 
-12 New Debug
-	This script is used to find a particular row in the Main Control Table, copy it over to the DEBUG table, 
-	make appropriate edits, and copy them back. It is also handy if you have a small set of new tables to be
-	added, and you don't want to run the entire FULL or DELTA load, or wait for the next schedule run.
+40 New Control Rows
+	This script runs the procedure above twice to generate a total of four rows (2 FULL, 2 DELTA) in the MainControlTable.
 
+50 Explanation of Pipeline Tasks
+	English description of what each task does in each pipeline.
+
+60 Nuances of Watermarks
+	What to look for.
+
+70 Using the DEBUG Path
+	Sample code and instructions for using the pipelines in DEBUG mode.
+
+80 Known Limitations
+	(Self-explanatory. If there were any UN-known limitations, then they would be, by definition, KNOWN!)
 
 
 */
