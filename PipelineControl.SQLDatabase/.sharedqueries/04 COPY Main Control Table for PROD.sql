@@ -43,11 +43,11 @@ BEGIN
         P.[CopySinkSettings]                = D.[CopySinkSettings],             
         P.[CopyActivitySettings]            = D.[CopyActivitySettings],         
         --P.[TopLevelPipelineName]          = D.[TopLevelPipelineName],         
-        --P.[ScheduleSettings]              = D.[ScheduleSettings]],                  
+        --P.[ScheduleSettings]              = D.[ScheduleSettings],                  
         P.[DataLoadingBehaviorSettings]     = D.[DataLoadingBehaviorSettings],  
-        P.[TaskId]                          = D.[TaskId],                     
+        P.[TaskId]                          = D.[TaskId]                    
         --P.[CopyEnabled]                   = D.[CopyEnabled],                  
-        P.[LastRunDateTime]                 = D.[LastRunDateTime]
+        --P.[LastRunDateTime]                 = D.[LastRunDateTime]
     FROM [dbo].[MainControlTable]               AS P -- Production
     INNER JOIN [dbo].[MainControlTable_DEBUG]   AS D -- DEBUG
         ON P.Id = D.Id
