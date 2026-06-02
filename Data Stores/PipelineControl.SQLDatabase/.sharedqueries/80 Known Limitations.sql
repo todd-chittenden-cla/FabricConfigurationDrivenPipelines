@@ -6,6 +6,7 @@ Known Limitations:
     SQL Endpoint Id, if you do put in dynamic content, it is not saved.
     Because of this, I had to put in separate tasks, one for each lakehouse to be refreshed regardless
     of the lakehouse that was actually written to.
+    Note: There is a new Workspace setting in preview: New Metadata Sync that may be better.
 
     * The Copy Data tasks (in both Full and Delta paths) do not support dynamic content for the 
     Connection Type property. This sample solution just happens to use two sources that are both
