@@ -28,26 +28,27 @@ Before creating this procedure, the relevant GUIDs and object names need to be p
 
 SET NOCOUNT ON;
 
-
-
 /* Some CONSTANT values that will need to be edited: */
-DECLARE @ServerGUID					NVARCHAR(100)	= 'nv664whn3zsefbhnfzmjkcyr6a-5rrjaoi5pncetjuevmvlm6ucnq'; /* This is the connection string GUID only, minus the .datawarehouse.fabric.microsoft.com */
-DECLARE @WorkspaceID				NVARCHAR(100)	= '399062ec-7b1d-4944-a684-ab2ab67a826c'; /* From the browser */
-DECLARE @LakehouseConnectionID		NVARCHAR(100)	= '758f4778-cc01-43dd-80a2-3c380ff06741'; /* From Connections and Gateways, Settings */
+DECLARE @ServerGUID					NVARCHAR(100)	= 'aaaaaaaaaaaaaaaaaaaaaaaaaa-aaaaaaaaaaaaaaaaaaaaaaaaaa'; /* This is the connection string GUID only, minus the .datawarehouse.fabric.microsoft.com */
+DECLARE @WorkspaceID				NVARCHAR(100)	= 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'; /* From the browser */
+DECLARE @LakehouseConnectionID		NVARCHAR(100)	= 'ffffffff-gggg-hhhh-iiii-jjjjjjjjjjjj'; /* From Connections and Gateways, Settings */
 
 /* Some variables that are based on the source system: */
-DECLARE @SourceConnectionID NVARCHAR(100)	= CASE @Source  WHEN 'PowerBIDW'	THEN 'bef20cc1-bad8-481f-a144-56ce175629ea' /* from Connections and Gateways */
-															WHEN 'IMDB'			THEN '43e59bcd-34ca-4d12-a331-e57b64357a2f'
+/* Source Connection ID cn be obtained from Connections and Gateways */
+DECLARE @SourceConnectionID NVARCHAR(100)	= CASE @Source  WHEN 'PowerBIDW'	THEN 'kkkkkkkk-llll-mmmm-nnnn-oooooooooooo' 
+															WHEN 'IMDB'			THEN 'pppppppp-qqqq-rrrr-ssss-tttttttttttt'
 															ELSE 'Hello World'
 															END;
 
-DECLARE @DatabaseName		NVARCHAR(100)	= CASE @Source	WHEN 'PowerBIDW'	THEN 'PowerBIDW' /* From the Source Server */
+/* Database Name is from the source server */
+DECLARE @DatabaseName		NVARCHAR(100)	= CASE @Source	WHEN 'PowerBIDW'	THEN 'PowerBIDW' 
                                                             WHEN 'IMDB'         THEN 'IMDB'
 															ELSE 'Hello World'
 															END;
 
-DECLARE @LakehouseID		NVARCHAR(100)	= CASE @Source	WHEN 'PowerBIDW'	THEN '7757cf9d-9d5d-4446-af76-0c44d18fe317' /* From the browser / URL */
-                                                            WHEN 'IMDB'         THEN 'f0b65072-f2b3-49ba-8723-53c377a84ec6'
+/* Lakehouse IDs can be retrieved from the browser URL when viewing a lakehouse. */
+DECLARE @LakehouseID		NVARCHAR(100)	= CASE @Source	WHEN 'PowerBIDW'	THEN 'uuuuuuuu-vvvv-wwww-xxxx-yyyyyyyyyyyy' 
+                                                            WHEN 'IMDB'         THEN 'zzzzzzzz-aaaa-bbbb-3333-666666666666'
 															ELSE 'Hello World'
 															END;
 

@@ -27,6 +27,9 @@ Shared Queries in this Project:
 	* Main Control Table DEBUG (Does not have IDENTITY specified on the Id column)
 	* Main Control Table BACKUP (Does not have the IDENTITY specified on the Id column. Includes a SaveDate column)
 	
+01 CREATE VIEW MainControlTable_JSON_FFLATTENED
+	This contains TWO CREATE VIEW scripts - one for the 'production' version and one for the 'debug' version of the view.
+	The only difference is the table from which the view gets its data.
 
 02 BACKUP Main Control Table
 	This is a Stored Procedure that backs up the Main Control Table. If any backup data already exists for the 
@@ -59,8 +62,6 @@ Shared Queries in this Project:
 
 06 CREATE PROC Update Watermark Column DEBUG
 	(Same as above, but targets the MainControlTable_DEBUG)
-
-
 
 10 CREATE PROC NEW Control Row
 	This is a stored procedure that handles populating a new Control Row.

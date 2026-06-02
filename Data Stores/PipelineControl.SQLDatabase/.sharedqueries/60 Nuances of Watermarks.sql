@@ -1,6 +1,6 @@
 /*
 This solution strives to be flexible enough to handle most common Watermark column types. 
-The stored procedure to generate new Main Control Table rows supports four types:
+The stored procedure to generate new Main Control Table rows supports five types:
 * DATETIME
 * ROWVERSION and TIMESTAMP
 * INT and BIGINT
