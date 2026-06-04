@@ -106,5 +106,7 @@ Shared Queries in this Project:
 80 Known Limitations
 	(Self-explanatory. If there were any UN-known limitations, then they would be, by definition, KNOWN!)
 
+90 Customizing the Mapping Translator
+	Sample JSON code to use in the [CopyActivitySettings] column if you want custom mappings defined.
 
 */

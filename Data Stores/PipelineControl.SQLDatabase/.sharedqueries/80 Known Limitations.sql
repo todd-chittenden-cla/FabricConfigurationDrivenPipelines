@@ -8,6 +8,8 @@ Known Limitations:
     of the lakehouse that was actually written to.
     Note: There is a new Workspace setting in preview: New Metadata Sync that may be better.
 
+    https://api.fabric.microsoft.com/v1/workspaces/{workspaceId}/sqlEndpoints/{sqlEndpointId}/refreshMetadata
+
     * The Copy Data tasks (in both Full and Delta paths) do not support dynamic content for the 
     Connection Type property. This sample solution just happens to use two sources that are both
     SQL Server so this property is set accordingly. 
