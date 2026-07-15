@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "Clean Lakehouse _backup_ tables"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "b2207edc-24a3-906b-46f8-3cddb09e7736"
+  }
+}

@@ -5,7 +5,7 @@ The stored procedure to generate new Main Control Table rows supports five types
 * ROWVERSION and TIMESTAMP
 * INT and BIGINT
 
-It is important to select one of these four types even if your watermark column is slightly different.
+It is important to select one of these five types even if your watermark column is slightly different.
 For example, if the data type is DATETIME2, then specify DATETIME. This is because the Lookup Tasks
 that query the table after it is loaded has a CASE statement using that type.
 
