@@ -7,7 +7,9 @@ Version History
 Version     Date            By                  Notes
 =======     ====            ==                  =====
 1.0.00      02/13/2026      Todd Chittenden     Initial Version
-
+1.1.01      07/17/2026      ...                 Re-vamped [SourceQuery] so it 
+                                                A) can be used for Full Load
+                                                B) will use the sqlReaderQuery
 
 Notes:
 This VIEW uses JSON_VALUE (and in one case JSON_QUERY) to flatten the JSON data in most of the 
@@ -26,17 +28,24 @@ SELECT
     JSON_VALUE([SourceConnectionSettings], '$.sourceConnectionID')              AS [SourceConnectionID],    /* @item().SourceConnectionID */
     JSON_VALUE([SourceConnectionSettings], '$.databaseName')                    AS [SourceDatabaseName],    /* @item().SourceDatabaseName */
 
-    /* SourceQuery used only for the DeltaLoad */
-    'SELECT * FROM [' + JSON_VALUE([SourceObjectSettings], '$.schema') + '].[' + JSON_VALUE([SourceObjectSettings], '$.table') + '] 
-    WHERE [' + JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnName') + '] >
-    ' + CASE JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnType')
-            WHEN 'INT'          THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
-            WHEN 'BIGINT'       THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
-            WHEN 'ROWVERSION'   THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
-            WHEN 'TIMESTAMP'    THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
-            WHEN 'DATETIME'     THEN '''' + JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue') + ''''
-    ELSE JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnName')
-    END                                                                         AS [SourceQuery], /* @item().SourceQuery */
+    /* SourceQuery */
+    CASE WHEN JSON_VALUE([CopySourceSettings], '$.sqlReaderQuery') IS NULL THEN
+        CASE JSON_VALUE([DataLoadingBehaviorSettings], '$.dataLoadingBehavior') 
+            WHEN 'FullLoad' THEN 'SELECT * FROM [' + JSON_VALUE([SourceObjectSettings], '$.schema') + '].[' + JSON_VALUE([SourceObjectSettings], '$.table') + ']'
+            WHEN 'DeltaLoad' THEN 
+                    'SELECT * FROM [' + JSON_VALUE([SourceObjectSettings], '$.schema') + '].[' + JSON_VALUE([SourceObjectSettings], '$.table') + '] 
+                    WHERE [' + JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnName') + '] >
+                    ' + CASE JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnType')
+                            WHEN 'INT'          THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
+                            WHEN 'BIGINT'       THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
+                            WHEN 'ROWVERSION'   THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
+                            WHEN 'TIMESTAMP'    THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
+                            WHEN 'DATETIME'     THEN '''' + JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue') + ''''
+                    ELSE JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnName')
+                    END                                                                         
+            END             
+            ELSE JSON_VALUE([CopySourceSettings], '$.sqlReaderQuery')       END AS [SourceQuery], /* @item().SourceQuery */
+
 
     JSON_VALUE([DestinationObjectSettings], '$.schema')                         AS [DestinationSchema],     /* @item().DestinationSchema */
     JSON_VALUE([DestinationObjectSettings], '$.table')                          AS [DestinationTable],      /* @item().DestinationTable */
@@ -81,7 +90,9 @@ Version History
 Version     Date            By                  Notes
 =======     ====            ==                  =====
 1.0.00      02/13/2026      Todd Chittenden     Initial Version
-
+1.1.01      07/17/2026      ...                 Re-vamped [SourceQuery] so it 
+                                                A) can be used for Full Load
+                                                B) will use the sqlReaderQuery
 
 Notes:
 This VIEW uses JSON_VALUE (and in one case JSON_QUERY) to flatten the JSON data in most of the 
@@ -100,17 +111,24 @@ SELECT
     JSON_VALUE([SourceConnectionSettings], '$.sourceConnectionID')              AS [SourceConnectionID],    /* @item().SourceConnectionID */
     JSON_VALUE([SourceConnectionSettings], '$.databaseName')                    AS [SourceDatabaseName],    /* @item().SourceDatabaseName */
 
-    /* SourceQuery used only for the DeltaLoad */
-    'SELECT * FROM [' + JSON_VALUE([SourceObjectSettings], '$.schema') + '].[' + JSON_VALUE([SourceObjectSettings], '$.table') + '] 
-    WHERE [' + JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnName') + '] >
-    ' + CASE JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnType')
-            WHEN 'INT'          THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
-            WHEN 'BIGINT'       THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
-            WHEN 'ROWVERSION'   THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
-            WHEN 'TIMESTAMP'    THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
-            WHEN 'DATETIME'     THEN '''' + JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue') + ''''
-    ELSE JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnName')
-    END                                                                         AS [SourceQuery], /* @item().SourceQuery */
+    /* SourceQuery */
+    CASE WHEN JSON_VALUE([CopySourceSettings], '$.sqlReaderQuery') IS NULL THEN
+        CASE JSON_VALUE([DataLoadingBehaviorSettings], '$.dataLoadingBehavior') 
+            WHEN 'FullLoad' THEN 'SELECT * FROM [' + JSON_VALUE([SourceObjectSettings], '$.schema') + '].[' + JSON_VALUE([SourceObjectSettings], '$.table') + ']'
+            WHEN 'DeltaLoad' THEN 
+                    'SELECT * FROM [' + JSON_VALUE([SourceObjectSettings], '$.schema') + '].[' + JSON_VALUE([SourceObjectSettings], '$.table') + '] 
+                    WHERE [' + JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnName') + '] >
+                    ' + CASE JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnType')
+                            WHEN 'INT'          THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
+                            WHEN 'BIGINT'       THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
+                            WHEN 'ROWVERSION'   THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
+                            WHEN 'TIMESTAMP'    THEN JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue')
+                            WHEN 'DATETIME'     THEN '''' + JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnStartValue') + ''''
+                    ELSE JSON_VALUE([DataLoadingBehaviorSettings], '$.watermarkColumnName')
+                    END                                                                         
+            END             
+            ELSE JSON_VALUE([CopySourceSettings], '$.sqlReaderQuery')       END AS [SourceQuery], /* @item().SourceQuery */
+
 
     JSON_VALUE([DestinationObjectSettings], '$.schema')                         AS [DestinationSchema],     /* @item().DestinationSchema */
     JSON_VALUE([DestinationObjectSettings], '$.table')                          AS [DestinationTable],      /* @item().DestinationTable */
